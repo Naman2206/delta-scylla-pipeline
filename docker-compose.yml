@@ -1,0 +1,187 @@
+version: '3.8'
+
+x-airflow-common: &airflow-common
+  image: apache/airflow:2.8.1-python3.10
+  environment: &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    AIRFLOW__CORE__FERNET_KEY: 'ZmDfcTF7_60GrrY167zsiPd67pEvs0aGOv2oasOM1Pg='
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: 'true'
+    AIRFLOW__CORE__LOAD_EXAMPLES: 'false'
+    AIRFLOW__API__AUTH_BACKENDS: 'airflow.api.auth.backend.basic_auth'
+    SPARK_HOME: /opt/spark
+    SPARK_MASTER_URL: spark://spark-master:7077
+    SCYLLA_HOST: scylladb
+    SCYLLA_KEYSPACE: transactions_ks
+    DELTA_LAKE_PATH: /opt/spark/delta-lake
+    PYTHONPATH: /opt/airflow/spark_jobs
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./spark_jobs:/opt/airflow/spark_jobs
+    - ./scripts:/opt/airflow/scripts
+    - ./data/delta-lake:/opt/spark/delta-lake
+    - airflow-logs:/opt/airflow/logs
+  depends_on:
+    postgres:
+      condition: service_healthy
+  networks:
+    - de-network
+
+services:
+
+  # ─── Postgres (Airflow metadata DB) ───────────────────────────────────────
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s
+      retries: 5
+      start_period: 5s
+    networks:
+      - de-network
+
+  # ─── Airflow Init ─────────────────────────────────────────────────────────
+  airflow-init:
+    <<: *airflow-common
+    container_name: airflow-init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        pip install apache-airflow-providers-apache-spark cassandra-driver delta-spark pyspark==3.4.1 faker --quiet
+        airflow db init
+        airflow users create \
+          --username admin \
+          --firstname Admin \
+          --lastname User \
+          --role Admin \
+          --email admin@example.com \
+          --password admin
+        echo "Airflow initialized successfully"
+    restart: on-failure
+
+  # ─── Airflow Webserver ────────────────────────────────────────────────────
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: airflow-webserver
+    command: webserver
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    restart: always
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+
+  # ─── Airflow Scheduler ────────────────────────────────────────────────────
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: airflow-scheduler
+    command: scheduler
+    restart: always
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+
+  # ─── Spark Master ─────────────────────────────────────────────────────────
+  spark-master:
+    image: apache/spark:3.4.1
+    container_name: spark-master
+    environment:
+      - SPARK_MODE=master
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+      - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
+      - SPARK_SSL_ENABLED=no
+    ports:
+      - "8081:8080"   # Spark Master UI
+      - "7077:7077"   # Spark Master port
+    volumes:
+      - ./spark_jobs:/opt/spark_jobs
+      - ./data/delta-lake:/opt/spark/delta-lake
+    networks:
+      - de-network
+
+  # ─── Spark Worker ─────────────────────────────────────────────────────────
+  spark-worker:
+    image: apache/spark:3.4.1
+    container_name: spark-worker
+    environment:
+      - SPARK_MODE=worker
+      - SPARK_MASTER_URL=spark://spark-master:7077
+      - SPARK_WORKER_MEMORY=2G
+      - SPARK_WORKER_CORES=2
+      - SPARK_RPC_AUTHENTICATION_ENABLED=no
+      - SPARK_RPC_ENCRYPTION_ENABLED=no
+    volumes:
+      - ./spark_jobs:/opt/spark_jobs
+      - ./data/delta-lake:/opt/spark/delta-lake
+    depends_on:
+      - spark-master
+    networks:
+      - de-network
+
+  # ─── ScyllaDB ─────────────────────────────────────────────────────────────
+  scylladb:
+    image: scylladb/scylla:5.4
+    container_name: scylladb
+    command: --smp 1 --memory 512M --overprovisioned 1 --api-address 0.0.0.0
+    ports:
+      - "9042:9042"   # CQL
+      - "10000:10000" # REST API
+    volumes:
+      - scylla-data:/var/lib/scylla
+      - ./scylla/init.cql:/init.cql
+    healthcheck:
+      test: ["CMD-SHELL", "cqlsh --execute 'DESCRIBE KEYSPACES' 2>/dev/null && echo OK || exit 1"]
+      interval: 30s
+      timeout: 15s
+      retries: 10
+      start_period: 60s
+    networks:
+      - de-network
+
+  # ─── ScyllaDB Init (runs CQL after ScyllaDB is healthy) ───────────────────
+  scylla-init:
+    image: scylladb/scylla:5.4
+    container_name: scylla-init
+    depends_on:
+      scylladb:
+        condition: service_healthy
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        echo "Running ScyllaDB schema init..."
+        cqlsh scylladb 9042 -f /init.cql
+        echo "Schema initialized successfully"
+    volumes:
+      - ./scylla/init.cql:/init.cql
+    networks:
+      - de-network
+    restart: on-failure
+
+volumes:
+  postgres-data:
+  scylla-data:
+  airflow-logs:
+
+networks:
+  de-network:
+    driver: bridge
