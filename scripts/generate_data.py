@@ -31,7 +31,7 @@ from pyspark.sql.types import (
 )
 import pyspark.sql.functions as F
 
-DELTA_LAKE_PATH = os.getenv("DELTA_LAKE_PATH", "./data/delta-lake")
+DELTA_LAKE_PATH = os.path.abspath("./data/delta-lake")
 TABLE_PATH      = f"{DELTA_LAKE_PATH}/customer_transactions"
 NUM_RECORDS     = 1200   # base records (before duplicates)
 NUM_CUSTOMERS   = 80
@@ -181,8 +181,8 @@ def main():
     spark.read.format("delta").load(TABLE_PATH).show(5, truncate=False)
 
     # ── Write sample CSV for reference ───────────────────────────────────────
-    sample_csv_path = "./sample_data/sample_transactions.csv"
-    os.makedirs("./sample_data", exist_ok=True)
+    sample_csv_path = os.path.abspath("./sample_data/sample_transactions.csv")
+    os.makedirs(os.path.dirname(sample_csv_path), exist_ok=True)
     pdf.head(20).to_csv(sample_csv_path, index=False)
     print(f"\n  Sample CSV written → {sample_csv_path}")
 
