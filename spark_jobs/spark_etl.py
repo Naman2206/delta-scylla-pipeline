@@ -27,9 +27,9 @@ import pyspark.sql.functions as F
 from pyspark.sql.types import FloatType
 
 # ── Config (can be overridden by env vars) ────────────────────────────────────
-DELTA_LAKE_PATH  = os.getenv("DELTA_LAKE_PATH", "/opt/spark/delta-lake")
+DELTA_LAKE_PATH  = os.getenv("DELTA_LAKE_PATH", "./data/delta-lake")
 TABLE_PATH       = f"{DELTA_LAKE_PATH}/customer_transactions"
-SCYLLA_HOST      = os.getenv("SCYLLA_HOST",      "scylladb")
+SCYLLA_HOST      = os.getenv("SCYLLA_HOST",      "localhost")
 SCYLLA_PORT      = os.getenv("SCYLLA_PORT",      "9042")
 SCYLLA_KEYSPACE  = os.getenv("SCYLLA_KEYSPACE",  "transactions_ks")
 SCYLLA_TABLE     = "daily_customer_totals"
@@ -47,6 +47,7 @@ def build_spark() -> SparkSession:
     return (
         SparkSession.builder
         .appName("CustomerTransactionsETL")
+        .master("local[*]")
         .config(
             "spark.jars.packages",
             "io.delta:delta-core_2.12:2.4.0,"

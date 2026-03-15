@@ -103,8 +103,8 @@ services:
   spark-master:
     image: apache/spark:3.4.1
     container_name: spark-master
+    command: ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.master.Master", "--host", "0.0.0.0"]
     environment:
-      - SPARK_MODE=master
       - SPARK_RPC_AUTHENTICATION_ENABLED=no
       - SPARK_RPC_ENCRYPTION_ENABLED=no
       - SPARK_LOCAL_STORAGE_ENCRYPTION_ENABLED=no
@@ -114,6 +114,7 @@ services:
       - "7077:7077"   # Spark Master port
     volumes:
       - ./spark_jobs:/opt/spark_jobs
+      - ./scripts:/opt/scripts
       - ./data/delta-lake:/opt/spark/delta-lake
     networks:
       - de-network
@@ -122,15 +123,15 @@ services:
   spark-worker:
     image: apache/spark:3.4.1
     container_name: spark-worker
+    command: ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "spark://spark-master:7077"]
     environment:
-      - SPARK_MODE=worker
-      - SPARK_MASTER_URL=spark://spark-master:7077
       - SPARK_WORKER_MEMORY=2G
       - SPARK_WORKER_CORES=2
       - SPARK_RPC_AUTHENTICATION_ENABLED=no
       - SPARK_RPC_ENCRYPTION_ENABLED=no
     volumes:
       - ./spark_jobs:/opt/spark_jobs
+      - ./scripts:/opt/scripts
       - ./data/delta-lake:/opt/spark/delta-lake
     depends_on:
       - spark-master

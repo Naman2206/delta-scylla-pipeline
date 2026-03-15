@@ -19,6 +19,7 @@ import os
 import uuid
 import random
 from datetime import datetime, timedelta, timezone
+from typing import Dict, List
 
 from faker import Faker
 import pandas as pd
@@ -68,7 +69,7 @@ def random_timestamp(days_back: int = DAYS_BACK) -> datetime:
     return now - delta
 
 
-def generate_records(n: int) -> list[dict]:
+def generate_records(n: int) -> List[Dict]:
     customer_ids = [f"C{str(i).zfill(5)}" for i in range(1, NUM_CUSTOMERS + 1)]
     merchants    = [f"STORE_{i}" for i in range(1, NUM_MERCHANTS + 1)]
     # add a few realistic merchant names
@@ -86,7 +87,7 @@ def generate_records(n: int) -> list[dict]:
     return records
 
 
-def inject_data_quality_issues(records: list[dict]) -> list[dict]:
+def inject_data_quality_issues(records: List[Dict]) -> List[Dict]:
     """
     Inject realistic data quality issues so the ETL pipeline has work to do:
       - ~5 % duplicate transaction_ids
