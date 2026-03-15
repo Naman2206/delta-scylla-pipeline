@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="280" viewBox="0 0 700 280">
+  <style>
+    .title { font: bold 18px sans-serif; fill: #2c3e50; }
+    .box { fill: #f1f3f5; stroke: #57606f; stroke-width: 2; rx: 10; }
+    .text { font: 13px sans-serif; fill: #2f3542; }
+    .arrow { stroke: #57606f; stroke-width: 2; marker-end: url(#arrow); }
+  </style>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#57606f"/>
+    </marker>
+  </defs>
+  <text class="title" x="20" y="28">Airflow DAG: customer_transactions_pipeline</text>
+  <rect class="box" x="32" y="48" width="180" height="60"/>
+  <text class="text" x="42" y="70">start_pipeline</text>
+  <text class="text" x="42" y="90">(EmptyOperator)</text>
+
+  <rect class="box" x="260" y="48" width="200" height="60"/>
+  <text class="text" x="270" y="70">extract_delta</text>
+  <text class="text" x="270" y="90">(PythonOperator)</text>
+
+  <path class="arrow" d="M212 78 L256 78"/>
+
+  <rect class="box" x="520" y="48" width="200" height="60"/>
+  <text class="text" x="530" y="70">spark_transform</text>
+  <text class="text" x="530" y="90">(BashOperator)</text>
+
+  <path class="arrow" d="M460 78 L520 78"/>
+
+  <rect class="box" x="260" y="150" width="200" height="60"/>
+  <text class="text" x="270" y="170">quality_check</text>
+  <text class="text" x="270" y="190">(PythonOperator)</text>
+  <path class="arrow" d="M620 78 L620 150"/>
+  <path class="arrow" d="M360 108 L360 150"/>
+
+  <rect class="box" x="520" y="150" width="200" height="60"/>
+  <text class="text" x="530" y="170">notify_success</text>
+  <text class="text" x="530" y="190">(PythonOperator)</text>
+
+  <path class="arrow" d="M460 180 L520 180"/>
+</svg>

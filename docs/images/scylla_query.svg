@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="700" height="260" viewBox="0 0 700 260">
+  <style>
+    .title { font: bold 18px sans-serif; fill: #2c3e50; }
+    .box { fill: #f1f3f5; stroke: #57606f; stroke-width: 2; rx: 10; }
+    .text { font: 12px sans-serif; fill: #2f3542; }
+    .row { font: 11px monospace; }
+    .header { font: 12px monospace; font-weight: bold; }
+  </style>
+  <text class="title" x="20" y="30">ScyllaDB Query Result (Sample)</text>
+  <rect class="box" x="40" y="50" width="620" height="190"/>
+  <text class="header" x="60" y="80">customer_id | transaction_date | daily_total</text>
+  <text class="row" x="60" y="105">C12345      | 2026-03-14       | 1,230.55</text>
+  <text class="row" x="60" y="125">C67890      | 2026-03-14       | 987.30</text>
+  <text class="row" x="60" y="145">C11111      | 2026-03-13       | 2,540.80</text>
+  <text class="row" x="60" y="165">C55555      | 2026-03-13       | 135.90</text>
+  <text class="row" x="60" y="185">C99999      | 2026-03-12       | 254.70</text>
+</svg>

@@ -329,6 +329,19 @@ extract_delta ──► spark_transform ──► quality_check ──► notify
 
 ---
 
+## Output Screenshots
+
+### Airflow DAG (UI)
+![Airflow DAG](docs/images/airflow_dag.svg)
+
+### Delta Lake History (Sample)
+![Delta Lake Version History](docs/images/delta_history.svg)
+
+### ScyllaDB Result (Sample)
+![ScyllaDB Query Result](docs/images/scylla_query.svg)
+
+---
+
 ## Delta Lake Versioning
 
 Run the versioning demo to see time travel in action:
