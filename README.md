@@ -40,6 +40,8 @@ This pipeline simulates a real-world financial transactions ETL system. It:
 4. **Loads** clean aggregated results into ScyllaDB for high-speed querying
 5. **Orchestrates** the entire pipeline via an Apache Airflow DAG that runs daily
 
+**Video Explanation**: [Watch the demo video](https://drive.google.com/file/d/1LrPtyiRqZIwxTCedkyW_r1_9GgCzoFbP/view?usp=drivesdk)
+
 ---
 
 ## Architecture
